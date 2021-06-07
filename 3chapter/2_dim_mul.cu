@@ -4,7 +4,8 @@
 #include<iostream>
 #include<cuda.h>
 using namespace std;
-__global__ void mul(int *a,int *b,int *c){
+const int N=2;
+__global__ void mul(int *a,int *b,int *c){//并发度为4的矩阵乘法
     int row=blockIdx.x;
     int col=threadIdx.x;
     int temp_sum=0;
@@ -18,9 +19,21 @@ __global__ void mul(int *a,int *b,int *c){
    c[row*blockDim.x+col]=temp_sum;
 
 }
+__global__ void mul_8(int *a,int *b,int *c){//实现了2*2*2个线程，每个都进行计算，并行度为8
+    int row=blockIdx.x/N;
+    int col=blockIdx.x%N;
+    __shared__ int mul[N];
+    //mul[0]=a[row][0]*b[0][col]
+    mul[threadIdx.x]=a[row*N+threadIdx.x]*b[threadIdx.x*N+col];
+    //mul[1]=a[row][1]*b[1][col]
+    __syncthreads();
+    int sum=0;
+    for(int i=0;i<blockDim.x;i++)
+        sum+=mul[i];
+    c[blockIdx.x]=sum;
+}
 int main(){
     int *a,*b,*dev_a,*dev_b,*dev_c,*c;
-    const int N=2;
     a=new int[N*N];
     b=new int [N*N];
     c=new int[N*N];
@@ -37,7 +50,8 @@ int main(){
     cudaMemcpy(dev_a,a,N*N*sizeof(int),cudaMemcpyHostToDevice);
     cudaMemcpy(dev_b,b,N*N*sizeof(int),cudaMemcpyHostToDevice);
 
-    mul<<<N,N>>>(dev_a,dev_b,dev_c);
+   // mul<<<N,N>>>(dev_a,dev_b,dev_c);
+   mul_8<<<N*N,N>>>(dev_a,dev_b,dev_c);
     cudaMemcpy(c,dev_c,N*N*sizeof(int),cudaMemcpyDeviceToHost);
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
