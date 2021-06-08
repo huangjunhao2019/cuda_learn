@@ -1,0 +1,2 @@
+# 第六章的收获就是cudaEventCreate cudaEventRecord cudaEventSynchronize用于计算执行时间
+详见那本书的第六章

@@ -51,7 +51,17 @@ int main(){
     cudaMemcpy(dev_b,b,N*N*sizeof(int),cudaMemcpyHostToDevice);
 
    // mul<<<N,N>>>(dev_a,dev_b,dev_c);
+   cudaEvent_t start,stop;
+   cudaEventCreate(&start);
+   cudaEventCreate(&stop);
+   cudaEventRecord(start,0);
+
    mul_8<<<N*N,N>>>(dev_a,dev_b,dev_c);
+   cudaEventRecord(stop,0);
+   cudaEventSynchronize(stop);
+   float elapsedTime;
+   cudaEventElapsedTime(&elapsedTime,start,stop);
+   cout<<"Time: "<<elapsedTime<<endl;
     cudaMemcpy(c,dev_c,N*N*sizeof(int),cudaMemcpyDeviceToHost);
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
